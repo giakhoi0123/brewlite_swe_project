@@ -9,7 +9,14 @@ config({ path: resolve(process.cwd(), '../.env') });
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
-  app.enableCors({ origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:3001' });
+  app.enableCors({
+    origin: [
+      process.env.FRONTEND_ORIGIN,
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ].filter(Boolean) as string[],
+    credentials: true,
+  });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   await app.listen(process.env.PORT ?? 3000);
 }

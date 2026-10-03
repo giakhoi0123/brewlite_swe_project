@@ -9,7 +9,14 @@ const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.setGlobalPrefix('api');
-    app.enableCors({ origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:3001' });
+    app.enableCors({
+        origin: [
+            process.env.FRONTEND_ORIGIN,
+            'http://localhost:3000',
+            'http://localhost:3001',
+        ].filter(Boolean),
+        credentials: true,
+    });
     app.useGlobalPipes(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     await app.listen(process.env.PORT ?? 3000);
 }
