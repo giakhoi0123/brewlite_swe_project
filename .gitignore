@@ -1,0 +1,10 @@
+# Environment files
+.env
+backend/.env
+frontend/.env.local
+*.env
+!*.env.example
+
+# OS
+.DS_Store
+Thumbs.db

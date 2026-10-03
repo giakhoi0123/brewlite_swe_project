@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
@@ -97,6 +98,7 @@ function getErrorMessage(value: unknown) {
 }
 
 export function AuthPage() {
+  const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
@@ -113,16 +115,27 @@ export function AuthPage() {
   const passwordRef = useRef<HTMLInputElement>(null);
 
   const strength = useMemo(() => {
-    if (password.length >= 8 && /[^A-Za-z0-9]/.test(password))
+    if (!password) {
+      return {
+        level: "weak",
+        label: "Enter password",
+        color: "#EF4444",
+      };
+    }
+    const hasLength = password.length >= 8;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+    if (hasLength && hasUpper && hasNumber && hasSpecial) {
       return { level: "strong", label: "Strong roast", color: "#10B981" };
-    if (
-      password.length >= 6 &&
-      (/[A-Z]/.test(password) || /[0-9]/.test(password))
-    )
+    }
+    if (hasLength && (hasUpper || hasNumber)) {
       return { level: "medium", label: "Medium roast", color: "#F59E0B" };
+    }
     return {
       level: "weak",
-      label: password ? "Weak roast" : "Enter password",
+      label: "Weak roast (min 8 chars)",
       color: "#EF4444",
     };
   }, [password]);
@@ -139,12 +152,44 @@ export function AuthPage() {
     setError("");
     setEmailError("");
     setSuccess("");
-    if (mode === "signup" && password !== confirmPassword)
-      return setError("Passwords do not match.");
-    if (mode === "signup" && !terms)
-      return setError(
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    const trimmedName = name.trim();
+
+    // 1. Client-side field validations
+    if (mode === "signup" && !trimmedName) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!trimmedEmail) {
+      setEmailError("Please enter your email address.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+    if (!trimmedPassword) {
+      setError("Please enter your password.");
+      return;
+    }
+    if (mode === "signup" && password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+    if (mode === "signup" && password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (mode === "signup" && !terms) {
+      setError(
         "Please agree to the Roastery Terms and Privacy Standards.",
       );
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch(
@@ -153,20 +198,39 @@ export function AuthPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
-            mode === "signin" ? { email, password } : { name, email, password },
+            mode === "signin"
+              ? { email: trimmedEmail, password }
+              : { name: trimmedName, email: trimmedEmail, password },
           ),
         },
       );
       const data = await response.json();
       if (!response.ok) {
-        const message = getErrorMessage(data.message ?? data.error);
-        if (mode === "signup") {
-          setEmailError(message);
+        const rawMessage = data.message ?? data.error;
+        if (Array.isArray(rawMessage)) {
+          const emailErrs = rawMessage.filter(
+            (msg: string) => typeof msg === "string" && msg.toLowerCase().includes("email"),
+          );
+          const otherErrs = rawMessage.filter(
+            (msg: string) => typeof msg !== "string" || !msg.toLowerCase().includes("email"),
+          );
+          if (emailErrs.length > 0) {
+            setEmailError(emailErrs.join(". "));
+          }
+          if (otherErrs.length > 0) {
+            setError(otherErrs.join(". "));
+          }
         } else {
-          setError(message);
+          const message = getErrorMessage(rawMessage);
+          if (response.status === 409 || message.toLowerCase().includes("email")) {
+            setEmailError(message);
+          } else {
+            setError(message);
+          }
         }
         return;
       }
+
       const result = data as ApiResult;
       if (mode === "signup" && response.status === 201) {
         setMode("signin");
@@ -180,6 +244,7 @@ export function AuthPage() {
         setSuccess(
           "Authentication verified! Connecting to espresso counter...",
         );
+        router.push("/products");
       }
     } catch (requestError) {
       setError(
@@ -308,7 +373,7 @@ export function AuthPage() {
                   required
                 />
               </div>
-              {mode === "signup" && emailError && (
+              {emailError && (
                 <p className="field-error">{emailError}</p>
               )}
             </label>
@@ -348,11 +413,13 @@ export function AuthPage() {
                     />
                     <i
                       className={
-                        strength.level === "strong" ? "filled" : "filled muted"
+                        strength.level === "medium" || strength.level === "strong"
+                          ? "filled"
+                          : "filled muted"
                       }
                       style={{
                         backgroundColor:
-                          strength.level === "strong"
+                          strength.level === "medium" || strength.level === "strong"
                             ? strength.color
                             : undefined,
                       }}
