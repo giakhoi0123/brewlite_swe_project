@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { sampleProducts } from './seed-products';
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,14 @@ async function main() {
     update: { name: 'Demo Barista', passwordHash },
     create: { email: 'demo@brewlite.coffee', name: 'Demo Barista', passwordHash },
   });
+
+  // Insert only: re-running seed must not restock products or overwrite edited prices.
+  await prisma.product.createMany({ data: sampleProducts, skipDuplicates: true });
 }
 
-main().finally(() => prisma.$disconnect());
+main()
+  .catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(() => prisma.$disconnect());

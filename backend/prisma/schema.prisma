@@ -18,3 +18,14 @@ model User {
 
   @@map("users")
 }
+
+model Product {
+  id       String @id @default(uuid()) @db.Uuid
+  name     String
+  // Nonnegative price/stock are enforced by CHECK constraints in the SQL migration.
+  price    Int
+  imageUrl String @map("image_url")
+  stock    Int    @default(0)
+
+  @@map("products")
+}
