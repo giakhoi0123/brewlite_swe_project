@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { sampleProducts } from './seed-products';
+import { seedProductCustomization } from './seed-product-customization';
 
 const prisma = new PrismaClient();
 
@@ -14,6 +15,7 @@ async function main() {
 
   // Insert only: re-running seed must not restock products or overwrite edited prices.
   await prisma.product.createMany({ data: sampleProducts, skipDuplicates: true });
+  await seedProductCustomization(prisma);
 }
 
 main()
