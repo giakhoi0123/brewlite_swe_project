@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { Product } from "@/types/product";
+import type { ProductSelectionHandler } from "@/types/product-details-adapter";
 import menuStyles from "./menu.module.css";
 import styles from "./product-card.module.css";
 
@@ -13,7 +14,7 @@ const vnd = new Intl.NumberFormat("vi-VN", {
 
 export type ProductCardProps = {
   product: Product;
-  onSelectProduct?: (productId: Product["id"]) => void;
+  onSelectProduct?: ProductSelectionHandler;
 };
 
 function ProductImage({ src, name }: { src: string; name: string }) {
