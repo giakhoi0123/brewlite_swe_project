@@ -1,0 +1,58 @@
+.card {
+  border: 1px solid color-mix(in srgb, var(--menu-outline-variant) 40%, transparent);
+}
+
+.imageButton {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--menu-radius-image);
+  padding: 0;
+  background: var(--menu-surface-low);
+  color: var(--menu-muted);
+  cursor: pointer;
+}
+
+.fallback {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.nameButton {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--menu-ink);
+  font: 600 18px/26px var(--font-jakarta), sans-serif;
+  overflow-wrap: anywhere;
+  text-align: left;
+  cursor: pointer;
+}
+
+.imageButton:disabled,
+.nameButton:disabled {
+  cursor: default;
+}
+
+.selectButton:disabled,
+.selectButton:disabled:hover {
+  background: var(--menu-surface-container);
+  color: var(--menu-muted);
+  cursor: not-allowed;
+}
+
+.card button:focus-visible {
+  outline: 2px solid var(--menu-secondary);
+  outline-offset: 4px;
+}
