@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Role, UserStatus } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
@@ -12,29 +13,33 @@ export class AuthService {
   async register(input: RegisterDto) {
     const email = input.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email } });
-    if (existing) throw new ConflictException('An account with this email already exists');
+    if (existing) throw new ConflictException('Email này đã được đăng ký');
 
     const passwordHash = await bcrypt.hash(input.password, 10);
     const user = await this.prisma.user.create({
-      data: { email, name: input.name.trim(), passwordHash },
-      select: { id: true, email: true, name: true, loyaltyPoints: true },
+      data: { email, fullName: input.name.trim(), passwordHash, role: Role.CUSTOMER },
+      select: { id: true, email: true, fullName: true, loyaltyPoints: true, role: true },
     });
-    return { user, accessToken: await this.signToken(user.id, user.email) };
+    return { user: this.publicUser(user), accessToken: await this.signToken(user.id) };
   }
 
   async login(input: LoginDto) {
     const email = input.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
-      throw new UnauthorizedException('Invalid email or password');
+    if (!user || user.status !== UserStatus.ACTIVE || !(await bcrypt.compare(input.password, user.passwordHash))) {
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
     return {
-      user: { id: user.id, email: user.email, name: user.name, loyaltyPoints: user.loyaltyPoints },
-      accessToken: await this.signToken(user.id, user.email),
+      user: this.publicUser(user),
+      accessToken: await this.signToken(user.id),
     };
   }
 
-  private signToken(sub: string, email: string) {
-    return this.jwt.signAsync({ sub, email });
+  publicUser(user: { id: string; email: string; fullName: string; loyaltyPoints: number; role: Role }) {
+    return { id: user.id, email: user.email, name: user.fullName, loyaltyPoints: user.loyaltyPoints, role: user.role };
+  }
+
+  private signToken(sub: string) {
+    return this.jwt.signAsync({ sub });
   }
 }

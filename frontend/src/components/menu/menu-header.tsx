@@ -2,21 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSyncExternalStore } from "react";
-import { useAuthStore } from "@/store/auth-store";
+import { logout, useAuthStore } from "@/store/auth-store";
 import { MenuBrand } from "./menu-brand";
 import styles from "./menu.module.css";
-
-const emptySubscribe = () => () => {};
 
 export function MenuHeader() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const clearSession = useAuthStore((state) => state.clearSession);
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const initialized = useAuthStore((state) => state.initialized);
 
-  function handleSignOut() {
-    clearSession();
+  async function handleSignOut() {
+    await logout();
     router.push("/");
   }
 
@@ -27,14 +23,16 @@ export function MenuHeader() {
         <nav aria-label="Điều hướng chính" className="hidden rounded-full bg-[var(--menu-surface-container)] p-1 lg:block">
           <Link href="/products" aria-current="page" className={styles.action}>Thực đơn</Link>
         </nav>
-        {!mounted ? (
+        {!initialized ? (
           <span role="status" className="text-xs text-[var(--menu-muted)]">Đang tải tài khoản…</span>
         ) : user ? (
           <div className="flex w-full min-w-0 items-center justify-between gap-4 sm:w-auto sm:max-w-[60%]">
             <div className="min-w-0 text-xs leading-[18px] sm:text-right">
               <p className="font-semibold break-words [overflow-wrap:anywhere]">{user.name}</p>
               <p className="break-words text-[var(--menu-muted)] [overflow-wrap:anywhere]">{user.email}</p>
-              {Number.isSafeInteger(user.loyaltyPoints) && user.loyaltyPoints >= 0 && (
+              {user.role === "BARISTA" ? (
+                <Link href="/barista/dashboard" className="text-[var(--menu-secondary)]">Nhân viên pha chế · Bảng điều khiển</Link>
+              ) : Number.isSafeInteger(user.loyaltyPoints) && user.loyaltyPoints >= 0 && (
                 <p className="text-[var(--menu-secondary)]">{user.loyaltyPoints.toLocaleString("vi-VN")} điểm tích lũy</p>
               )}
             </div>
