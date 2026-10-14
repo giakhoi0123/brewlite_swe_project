@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MenuHeader } from "@/components/menu/menu-header";
 import { MenuHero } from "@/components/menu/menu-hero";
 import { MenuFooter } from "@/components/menu/menu-footer";
+import { ProductCatalog } from "@/components/menu/product-catalog";
 import styles from "@/components/menu/menu.module.css";
 
 export const metadata: Metadata = {
@@ -28,12 +29,7 @@ export default function ProductsPage() {
             <h2 id="menu-catalog-title" className={`${styles.headline} text-[22px] font-semibold leading-[30px]`}>Tất cả món nước</h2>
             <p className="text-sm leading-[22px] text-[var(--menu-muted)]">Một thức uống, một khoảnh khắc riêng.</p>
           </div>
-          {/* TRI-05/06 will supply the product grid and API states here. */}
-          <div className="flex min-h-60 flex-col items-center justify-center gap-3 rounded-[var(--menu-radius-panel)] border border-[var(--menu-outline-variant)]/40 bg-[var(--menu-card)] px-6 py-12 text-center shadow-[var(--menu-shadow-low)]">
-            <span aria-hidden="true" className="h-1 w-10 rounded-full bg-[var(--menu-secondary)]" />
-            <h3 className={`${styles.headline} text-lg font-semibold leading-[26px]`}>Thực đơn đang được chuẩn bị</h3>
-            <p className="max-w-md text-sm leading-[22px] text-[var(--menu-muted)]">Danh sách đồ uống sẽ sớm có mặt tại đây. Hẹn bạn một tách cà phê và những hương vị yêu thích.</p>
-          </div>
+          <ProductCatalog />
         </section>
       </main>
       <MenuFooter />

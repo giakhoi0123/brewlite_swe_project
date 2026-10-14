@@ -1,11 +1,12 @@
 "use client";
 
 import type { Product } from "@/types/product";
+import type { ProductSelectionHandler } from "@/types/product-details-adapter";
 import { ProductCard } from "./product-card";
 
 export type ProductGridProps = {
   products: readonly Product[];
-  onSelectProduct?: (productId: Product["id"]) => void;
+  onSelectProduct?: ProductSelectionHandler;
 };
 
 export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {

@@ -3,8 +3,7 @@
 import { FormEvent, ReactNode, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
+import { API_BASE_URL as apiUrl } from "@/lib/api";
 
 type Mode = "signin" | "signup";
 

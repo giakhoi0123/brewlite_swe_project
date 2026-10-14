@@ -11,6 +11,7 @@ import type { ProductListItem } from './products.service';
 describe('Products HTTP contract', () => {
   let app: INestApplication;
   const findMany = jest.fn<() => Promise<ProductListItem[]>>();
+  const findUnique = jest.fn<() => Promise<null>>();
   const product = {
     id: '31a650c7-8597-4a01-a8e2-000000000001',
     name: 'Bạc xỉu',
@@ -21,7 +22,7 @@ describe('Products HTTP contract', () => {
   beforeAll(async () => {
     const module = await Test.createTestingModule({ imports: [ProductsModule] })
       .overrideProvider(PrismaService)
-      .useValue({ product: { findMany } })
+      .useValue({ product: { findMany, findUnique } })
       .compile();
 
     app = module.createNestApplication({ logger: false });
@@ -32,6 +33,7 @@ describe('Products HTTP contract', () => {
 
   beforeEach(() => {
     findMany.mockReset();
+    findUnique.mockReset().mockResolvedValue(null);
   });
 
   afterAll(async () => {
@@ -80,9 +82,10 @@ describe('Products HTTP contract', () => {
     expect(findMany).not.toHaveBeenCalled();
   });
 
-  it('does not add a product detail endpoint', async () => {
+  it('returns 404 for an unknown detail without changing the list query', async () => {
     await request(app.getHttpServer()).get(`/api/products/${product.id}`).expect(404);
     expect(findMany).not.toHaveBeenCalled();
+    expect(findUnique).toHaveBeenCalledTimes(1);
   });
 
   it('does not add a product creation endpoint', async () => {
