@@ -32,3 +32,58 @@ model User {
 
   @@map("users")
 }
+
+model Product {
+  id          String @id @default(uuid()) @db.Uuid
+  name        String
+  // Nonnegative price/stock are enforced by CHECK constraints in the SQL migration.
+  price       Int
+  imageUrl    String @map("image_url")
+  stock       Int    @default(0)
+  description String @default("")
+  sizes       ProductSize[]
+  toppings    ProductTopping[]
+
+  @@map("products")
+}
+
+enum ProductSizeCode {
+  S
+  M
+  L
+}
+
+model ProductSize {
+  id         String          @id @default(uuid()) @db.Uuid
+  productId  String          @map("product_id") @db.Uuid
+  code       ProductSizeCode
+  name       String
+  extraPrice Int             @map("extra_price")
+  available  Boolean         @default(true)
+  isDefault  Boolean         @default(false) @map("is_default")
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, code])
+  @@map("product_sizes")
+}
+
+model Topping {
+  id       String           @id @default(uuid()) @db.Uuid
+  name     String
+  products ProductTopping[]
+
+  @@map("toppings")
+}
+
+model ProductTopping {
+  productId  String  @map("product_id") @db.Uuid
+  toppingId  String  @map("topping_id") @db.Uuid
+  extraPrice Int     @map("extra_price")
+  available  Boolean @default(true)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  topping    Topping @relation(fields: [toppingId], references: [id], onDelete: Restrict)
+
+  @@id([productId, toppingId])
+  @@index([toppingId])
+  @@map("product_toppings")
+}

@@ -1,0 +1,41 @@
+.skeleton {
+  background: var(--menu-surface-highest);
+  animation: breathe 1.5s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+.control {
+  width: 100%;
+  min-height: 44px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--menu-outline);
+  border-radius: var(--menu-radius-image);
+  background: var(--menu-card);
+  color: var(--menu-ink);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.control::placeholder { color: var(--menu-muted); }
+
+.controls input:focus-visible,
+.controls select:focus-visible {
+  outline: 2px solid var(--menu-secondary);
+  outline-offset: 4px;
+}
+
+.reset:disabled,
+.reset:disabled:hover {
+  background: var(--menu-surface-container);
+  color: var(--menu-muted);
+  cursor: not-allowed;
+}

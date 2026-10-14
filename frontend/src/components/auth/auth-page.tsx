@@ -4,8 +4,7 @@ import { FormEvent, ReactNode, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002/api";
+import { API_BASE_URL as apiUrl } from "@/lib/api";
 
 type Mode = "signin" | "signup";
 

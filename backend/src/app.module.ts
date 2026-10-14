@@ -4,12 +4,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { ProductsModule } from './products/products.module';
 import configuration from './configuration';
 import { BaristaController } from './barista/barista.controller';
 import { RolesGuard } from './auth/roles.guard';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, load: [configuration] }), PrismaModule, AuthModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true, load: [configuration] }), PrismaModule, AuthModule, ProductsModule],
   controllers: [AppController, BaristaController],
   providers: [AppService, RolesGuard],
 })

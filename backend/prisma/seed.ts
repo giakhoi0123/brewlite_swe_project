@@ -1,12 +1,15 @@
 import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { sampleProducts } from './seed-products';
+import { seedProductCustomization } from './seed-product-customization';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  if (process.env.NODE_ENV === 'production') throw new Error('Không chạy seed nhân viên trong production');
+async function provisionBarista() {
   const email = process.env.BARISTA_EMAIL?.trim().toLowerCase();
   const password = process.env.BARISTA_PASSWORD;
+  if (!email && !password) return;
+  if (process.env.NODE_ENV === 'production') throw new Error('Không chạy seed nhân viên trong production');
   if (!email || !password || password.length < 8) throw new Error('Cần BARISTA_EMAIL và BARISTA_PASSWORD (ít nhất 8 ký tự)');
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -20,4 +23,16 @@ async function main() {
   console.log('Đã tạo tài khoản Barista');
 }
 
-main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());
+async function main() {
+  await provisionBarista();
+  // Insert only: re-running seed must not restock products or overwrite edited prices.
+  await prisma.product.createMany({ data: sampleProducts, skipDuplicates: true });
+  await seedProductCustomization(prisma);
+}
+
+main()
+  .catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(() => prisma.$disconnect());
