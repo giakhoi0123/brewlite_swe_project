@@ -1,0 +1,1 @@
+export default function Preparing() { return <main className="rounded-2xl border border-[#e8dfd5] bg-white p-8"><h1 className="text-2xl font-bold">Đang pha chế</h1><p className="mt-3">Chưa có dữ liệu đơn hàng.</p></main>; }

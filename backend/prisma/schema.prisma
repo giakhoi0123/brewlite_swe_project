@@ -7,14 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  CUSTOMER
+  BARISTA
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+
 model User {
-  id            String   @id @default(uuid()) @db.Uuid
-  email         String   @unique
-  passwordHash  String   @map("password_hash")
-  name          String
-  loyaltyPoints Int      @default(0) @map("loyalty_points")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id            String      @id @default(uuid()) @db.Uuid
+  email         String      @unique
+  passwordHash  String      @map("password_hash")
+  fullName      String      @map("full_name")
+  phone         String?
+  role          Role        @default(CUSTOMER)
+  loyaltyPoints Int         @default(0) @map("loyalty_points")
+  status        UserStatus  @default(ACTIVE)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
 
   @@map("users")
 }

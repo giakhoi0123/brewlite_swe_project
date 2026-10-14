@@ -1,30 +1,31 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/auth-store";
+import { logout, useAuthStore } from "@/store/auth-store";
 
 const emptySubscribe = () => () => {};
 
 export default function ProductsPage() {
   const router = useRouter();
-  const { user, clearSession } = useAuthStore();
+  const { user, initialized } = useAuthStore();
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
     () => false,
   );
 
-  function handleSignOut() {
-    clearSession();
+  async function handleSignOut() {
+    await logout();
     router.push("/");
   }
 
   // Prevent hydration mismatch when reading localStorage
-  if (!mounted) {
+  if (!mounted || !initialized) {
     return (
       <main className="min-h-screen bg-[#fcf9f3] flex items-center justify-center">
-        <p className="text-[#4f4440] text-sm animate-pulse">Loading espresso lab...</p>
+        <p className="text-[#4f4440] text-sm animate-pulse">Đang tải BrewLite...</p>
       </main>
     );
   }
@@ -35,9 +36,15 @@ export default function ProductsPage() {
       <header className="border-b border-[#e8dfd5] bg-[#fffdf9]/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-full bg-[#2b1810] text-[#fffdf9] flex items-center justify-center font-bold text-lg shadow-sm">
-              ☕
-            </span>
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-[#e8dfd5] shadow-sm flex-shrink-0">
+              <Image
+                src="/logo.png"
+                alt="BrewLite Logo"
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
+            </div>
             <div>
               <h1 className="text-base font-bold tracking-tight text-[#2b1810] leading-none">
                 BrewLite
@@ -49,7 +56,7 @@ export default function ProductsPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            {user ? (
+            {user?.role === "CUSTOMER" ? (
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-semibold text-[#2b1810]">{user.name}</p>
@@ -63,7 +70,7 @@ export default function ProductsPage() {
                   onClick={handleSignOut}
                   className="px-3 py-1.5 rounded-full text-xs font-medium bg-[#2b1810] text-white hover:bg-[#c87d55] transition-colors cursor-pointer"
                 >
-                  Sign Out
+                  Đăng xuất
                 </button>
               </div>
             ) : (
@@ -72,7 +79,7 @@ export default function ProductsPage() {
                 onClick={() => router.push("/")}
                 className="px-3 py-1.5 rounded-full text-xs font-medium bg-[#2b1810] text-white hover:bg-[#c87d55] transition-colors cursor-pointer"
               >
-                Sign In
+                Đăng nhập
               </button>
             )}
           </div>
@@ -89,7 +96,7 @@ export default function ProductsPage() {
               Session Authenticated · Tap-To-Brew Ready
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
-              Welcome back, {user?.name || "Coffee Lover"}!
+              Chào mừng, {user?.role === "CUSTOMER" ? user.name : "bạn"}!
             </h2>
             <p className="text-sm text-[#fffdf9]/80 leading-relaxed mb-6">
               Your session passkey and verified token are active. You are now connected to our

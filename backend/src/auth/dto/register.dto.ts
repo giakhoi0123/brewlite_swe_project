@@ -10,7 +10,7 @@ export class RegisterDto {
 
   @IsString()
   @MinLength(8)
-  @Matches(/[A-Z]/, { message: 'password must contain an uppercase letter' })
-  @Matches(/[0-9]/, { message: 'password must contain a number' })
+  @Matches(/[A-Z]/, { message: 'Mật khẩu phải có chữ hoa' })
+  @Matches(/[0-9]/, { message: 'Mật khẩu phải có chữ số' })
   password!: string;
 }

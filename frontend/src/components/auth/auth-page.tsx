@@ -1,15 +1,16 @@
 "use client";
 
 import { FormEvent, ReactNode, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002/api";
 
 type Mode = "signin" | "signup";
 
 type ApiResult = {
-  user: { id: string; email: string; name: string; loyaltyPoints: number };
+  user: { id: string; email: string; name: string; loyaltyPoints: number; role: "CUSTOMER" | "BARISTA" };
   accessToken: string;
 };
 
@@ -94,10 +95,10 @@ function getErrorMessage(value: unknown) {
   if (Array.isArray(value)) return value.join(", ");
   if (value && typeof value === "object" && "message" in value)
     return String(value.message);
-  return "Something went wrong. Please try again.";
+  return "Đã xảy ra lỗi. Vui lòng thử lại.";
 }
 
-export function AuthPage() {
+export function AuthPage({ reason }: { reason?: string }) {
   const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
   const [mode, setMode] = useState<Mode>("signin");
@@ -106,19 +107,19 @@ export function AuthPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(true);
   const [terms, setTerms] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(reason === "login" ? "Vui lòng đăng nhập để tiếp tục" : "");
   const [emailError, setEmailError] = useState("");
   const [success, setSuccess] = useState("");
   const passwordRef = useRef<HTMLInputElement>(null);
+
 
   const strength = useMemo(() => {
     if (!password) {
       return {
         level: "weak",
-        label: "Enter password",
+        label: "Nhập mật khẩu",
         color: "#EF4444",
       };
     }
@@ -128,14 +129,14 @@ export function AuthPage() {
     const hasSpecial = /[^A-Za-z0-9]/.test(password);
 
     if (hasLength && hasUpper && hasNumber && hasSpecial) {
-      return { level: "strong", label: "Strong roast", color: "#10B981" };
+      return { level: "strong", label: "Mật khẩu mạnh", color: "#10B981" };
     }
     if (hasLength && (hasUpper || hasNumber)) {
-      return { level: "medium", label: "Medium roast", color: "#F59E0B" };
+      return { level: "medium", label: "Mật khẩu trung bình", color: "#F59E0B" };
     }
     return {
       level: "weak",
-      label: "Weak roast (min 8 chars)",
+      label: "Mật khẩu yếu (ít nhất 8 ký tự)",
       color: "#EF4444",
     };
   }, [password]);
@@ -159,33 +160,33 @@ export function AuthPage() {
 
     // 1. Client-side field validations
     if (mode === "signup" && !trimmedName) {
-      setError("Please enter your full name.");
+      setError("Vui lòng nhập họ tên.");
       return;
     }
     if (!trimmedEmail) {
-      setEmailError("Please enter your email address.");
+      setEmailError("Vui lòng nhập email.");
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      setEmailError("Please enter a valid email address.");
+      setEmailError("Email không hợp lệ.");
       return;
     }
     if (!trimmedPassword) {
-      setError("Please enter your password.");
+      setError("Vui lòng nhập mật khẩu.");
       return;
     }
     if (mode === "signup" && password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+      setError("Mật khẩu phải có ít nhất 8 ký tự.");
       return;
     }
     if (mode === "signup" && password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("Mật khẩu xác nhận không khớp.");
       return;
     }
     if (mode === "signup" && !terms) {
       setError(
-        "Please agree to the Roastery Terms and Privacy Standards.",
+        "Vui lòng đồng ý với điều khoản sử dụng và chính sách bảo mật.",
       );
       return;
     }
@@ -196,6 +197,7 @@ export function AuthPage() {
         `${apiUrl}/auth/${mode === "signin" ? "login" : "register"}`,
         {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             mode === "signin"
@@ -214,12 +216,8 @@ export function AuthPage() {
           const otherErrs = rawMessage.filter(
             (msg: string) => typeof msg !== "string" || !msg.toLowerCase().includes("email"),
           );
-          if (emailErrs.length > 0) {
-            setEmailError(emailErrs.join(". "));
-          }
-          if (otherErrs.length > 0) {
-            setError(otherErrs.join(". "));
-          }
+          if (emailErrs.length > 0) setEmailError("Email không hợp lệ.");
+          if (otherErrs.length > 0) setError("Thông tin đăng ký không hợp lệ.");
         } else {
           const message = getErrorMessage(rawMessage);
           if (response.status === 409 || message.toLowerCase().includes("email")) {
@@ -240,18 +238,12 @@ export function AuthPage() {
         setSuccess("Tạo tài khoản thành công! Vui lòng đăng nhập.");
         window.setTimeout(() => passwordRef.current?.focus(), 0);
       } else {
-        setSession(result.user, result.accessToken);
-        setSuccess(
-          "Authentication verified! Connecting to espresso counter...",
-        );
-        router.push("/products");
+        setSession(result.user);
+        setSuccess("Đăng nhập thành công");
+        router.push(result.user.role === "BARISTA" ? "/barista/dashboard" : "/products");
       }
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to connect to BrewLite.",
-      );
+    } catch {
+      setError("Không thể kết nối BrewLite. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -270,8 +262,14 @@ export function AuthPage() {
         <div className="story-inner">
           <div className="story-top">
             <div className="story-brand">
-              <span className="story-mark">
-                <Icon name="coffee" className="brand-icon" />
+              <span className="story-mark overflow-hidden p-0">
+                <Image
+                  src="/logo.png"
+                  alt="BrewLite Logo"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover rounded-full"
+                />
               </span>
               <span>
                 <strong>BrewLite</strong>
@@ -313,40 +311,52 @@ export function AuthPage() {
 
       <section className="auth-panel">
         <div className="mobile-brand">
-          <span className="story-mark">
-            <Icon name="coffee" className="brand-icon" />
+          <span className="story-mark overflow-hidden p-0">
+            <Image
+              src="/logo.png"
+              alt="BrewLite Logo"
+              width={40}
+              height={40}
+              className="w-full h-full object-cover rounded-full"
+            />
           </span>
           <strong>BrewLite</strong>
         </div>
         <div className="auth-card">
           <div className="auth-heading">
-            <span className="maker-icon">
-              <Icon name="coffee" className="maker-icon-svg" />
+            <span className="maker-icon overflow-hidden p-0">
+              <Image
+                src="/logo.png"
+                alt="BrewLite Logo"
+                width={40}
+                height={40}
+                className="w-full h-full object-cover rounded-full"
+              />
             </span>
             <h2>
               {mode === "signin"
-                ? "Welcome to BrewLite"
-                : "Join the Roastery Club"}
+                ? "Chào mừng đến BrewLite"
+                : "Tạo tài khoản BrewLite"}
             </h2>
             <p>
               {mode === "signin"
-                ? "Sign in to access your saved roast notes and quick tap-to-brew cart."
-                : "Unlock complimentary first pour, seasonal roast drops & VIP skip-the-line."}
+                ? "Đăng nhập để tiếp tục đặt cà phê."
+                : "Đăng ký để bắt đầu trải nghiệm BrewLite."}
             </p>
           </div>
           <div className={`auth-tabs ${mode}`}>
             <span />
             <button type="button" onClick={() => switchMode("signin")}>
-              Sign In
+              Đăng nhập
             </button>
             <button type="button" onClick={() => switchMode("signup")}>
-              Create Account
+              Tạo tài khoản
             </button>
           </div>
           <form onSubmit={submit} className="auth-form" noValidate>
             {mode === "signup" && (
               <label>
-                Full Name
+                Họ và tên
                 <div className="input-wrap">
                   <span>
                     <Icon name="user" />
@@ -360,7 +370,7 @@ export function AuthPage() {
               </label>
             )}
             <label>
-              {mode === "signin" ? "Coffee ID or Email" : "Coffee Lover Email"}
+              Email
               <div className="input-wrap">
                 <span>
                   <Icon name="mail" />
@@ -378,7 +388,7 @@ export function AuthPage() {
               )}
             </label>
             <label>
-              {mode === "signin" ? "Roast Passkey" : "Create Password"}
+              Mật khẩu
               <div className="input-wrap">
                 <span>
                   <Icon name="lock" />
@@ -388,7 +398,7 @@ export function AuthPage() {
                   ref={passwordRef}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder={
-                    mode === "signin" ? "••••••••••••" : "At least 8 characters"
+                    mode === "signin" ? "••••••••••••" : "Ít nhất 8 ký tự"
                   }
                   type={showPassword ? "text" : "password"}
                   required
@@ -439,7 +449,7 @@ export function AuthPage() {
                   <span>{strength.label}</span>
                 </div>
                 <label>
-                  Confirm Password
+                  Xác nhận mật khẩu
                   <div className="input-wrap">
                     <span>
                       <Icon name="refresh" />
@@ -449,7 +459,7 @@ export function AuthPage() {
                       onChange={(event) =>
                         setConfirmPassword(event.target.value)
                       }
-                      placeholder="Re-type your password"
+                      placeholder="Nhập lại mật khẩu"
                       type={showPassword ? "text" : "password"}
                       required
                     />
@@ -462,29 +472,19 @@ export function AuthPage() {
                     type="checkbox"
                   />{" "}
                   <span>
-                    I agree to the <u>Roastery Terms</u> &{" "}
-                    <u>Privacy Standards</u>.
+                    Tôi đồng ý với <u>điều khoản sử dụng</u> và{" "}
+                    <u>chính sách bảo mật</u>.
                   </span>
                 </label>
               </>
             )}
-            {mode === "signin" && (
-              <label className="check-row">
-                <input
-                  checked={remember}
-                  onChange={(event) => setRemember(event.target.checked)}
-                  type="checkbox"
-                />{" "}
-                <span>Stay signed in for quick tap order</span>
-              </label>
-            )}
             {error && <p className="form-error">⚠ {error}</p>}
             <button className="submit-button" disabled={loading} type="submit">
               {loading
-                ? "Brewing..."
+                ? "Đang xử lý..."
                 : mode === "signin"
-                  ? "Sign In & Brew →"
-                  : "Create Account & Claim First Brew ✦"}
+                  ? "Đăng nhập →"
+                  : "Tạo tài khoản ✦"}
             </button>
           </form>
           <div className="divider">
